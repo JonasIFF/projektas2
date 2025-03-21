@@ -30,7 +30,7 @@ public class Stream : MonoBehaviour
 
     private IEnumerator BeginPour()
     {
-        while(gameObject.activeSelf)
+        while (gameObject.activeSelf)
         {
             targetPosition = FindEndPoint();
 
@@ -38,6 +38,16 @@ public class Stream : MonoBehaviour
             AnimateToPosition(1, targetPosition);
 
             yield return null;
+        }
+    }
+
+    private void Update()
+    {
+        // Tikriname, ar tevinis objektas (butelis) nebeturi skyscio
+        Bottle sourceBottle = GetComponentInParent<Bottle>();
+        if (sourceBottle != null && sourceBottle.currentVolume <= 0)
+        {
+            End();  // Kai tik istusteja, nutraukiam srauta
         }
     }
 
@@ -49,7 +59,7 @@ public class Stream : MonoBehaviour
 
     private IEnumerator EndPour()
     {
-        while(!HasReachedPosition(0, targetPosition))
+        while (!HasReachedPosition(0, targetPosition))
         {
             AnimateToPosition(0, targetPosition);
             AnimateToPosition(1, targetPosition);
@@ -65,11 +75,32 @@ public class Stream : MonoBehaviour
         RaycastHit hit;
         Ray ray = new Ray(transform.position, Vector3.down);
 
-        Physics.Raycast(ray, out hit, 2.0f);
-        Vector3 endPoint = hit.collider ? hit.point : ray.GetPoint(2.0f);
+        Bottle sourceBottle = GetComponentInParent<Bottle>();
 
-        return endPoint;
+        if (sourceBottle != null)
+        {
+            // Visada nuleidziam skysti — net jei nieko nepasiekia
+            float pourAmount = Time.deltaTime * 10f;
+            List<MixtureIngredient> drainedIngredients = sourceBottle.DrainLiquid(pourAmount);
+
+            // Jei pataikom i buteli — perpilam skysti su ingredientais
+            if (Physics.Raycast(ray, out hit, 2.0f))
+            {
+                Bottle targetBottle = hit.collider.GetComponent<Bottle>();
+
+                if (targetBottle != null)
+                {
+                    targetBottle.AddLiquid(pourAmount, drainedIngredients);
+                }
+
+                return hit.point;
+            }
+        }
+
+        // Jeigu nieko nepasiekia, srove vis tiek bega
+        return ray.GetPoint(2.0f);
     }
+
 
     private void MoveToPosition(int index, Vector3 targetPosition)
     {
@@ -91,7 +122,7 @@ public class Stream : MonoBehaviour
 
     private IEnumerator UpdateParticle()
     {
-        while(gameObject.activeSelf)
+        while (gameObject.activeSelf)
         {
             splashParticle.gameObject.transform.position = targetPosition;
 

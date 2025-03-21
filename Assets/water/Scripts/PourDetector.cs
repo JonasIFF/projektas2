@@ -29,6 +29,11 @@ public class PourDetector : MonoBehaviour
         }
     }
 
+    public bool IsPouring()
+    {
+        return isPouring;
+    }
+
     private void StartPour()
     {
         Debug.Log("Start");
@@ -39,8 +44,15 @@ public class PourDetector : MonoBehaviour
     private void EndPour()
     {
         Debug.Log("End");
-        currentStream.End();
-        currentStream = null;
+        if (currentStream != null)
+        {
+            currentStream.End();
+            currentStream = null;
+        }
+        else
+        {
+            Debug.LogWarning("EndPour was called, but currentStream is null!");
+        }
     }
 
     private float CalculatePourAngle()
